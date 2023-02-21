@@ -109,4 +109,4 @@ main() {
     docker compose up --build
 }
 
-main "$1"
+main
