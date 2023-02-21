@@ -59,7 +59,7 @@ When running the script, you will be prompted to enter the following environment
 - **HOST_PERSONAL_NETWORK_FOLDER**: This variable is used to mount your personal folder volume to your JupyterHub server.
 - **HOST_SHARED_NETWORK_FOLDER**: This variable is used to mount your shared folder volume to your JupyterHub server.
 
-After running the script successfully, you can access the JupyterHub server at ```http://<your-ip>:4551``` (if you are running it locally, replace ```<your-ip>``` with `localhost`). Alternatively, you can access it through the native port ```https://<your-ip>:443``` and log in with the administrator username/password ```admin/admin```.
+After running the script successfully, you can get the JupyterHub server public domain at ```http://<your-ip>:4551``` (if you are running it locally, replace ```<your-ip>``` with `localhost`). Alternatively, you can access it through the native port ```https://<your-ip>:443``` and log in with the administrator username/password ```admin/admin```.
 
 **Note:** Remember to change the userlist file to include your username and password. You can add users to the list using the following example:
 ```
