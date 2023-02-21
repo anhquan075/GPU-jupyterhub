@@ -2,4 +2,3 @@ secrets
 ssl
 userlist 
 .env
-.gitignore
