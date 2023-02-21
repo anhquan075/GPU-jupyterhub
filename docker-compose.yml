@@ -2,8 +2,7 @@
 # Distributed under the terms of the Modified BSD License.
 
 # JupyterHub docker-compose configuration file
-#version: "3"
-version: "2.3"
+version: "3"
 
 services:
   hub:
@@ -13,7 +12,7 @@ services:
       - hub-db
     build:
       context: .
-      dockerfile: Dockerfile.jupyterhub
+      dockerfile: ./dockerfile/Dockerfile.jupyterhub
       args:
         JUPYTERHUB_VERSION: $JUPYTERHUB_VERSION
     restart: always
@@ -24,10 +23,11 @@ services:
       # Bind Docker socket on the host so we can connect to the daemon from
       # within the container
       - "/var/run/docker.sock:/var/run/docker.sock:rw"
+      - "./cfgs/jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py"
       # Bind Docker volume on host for JupyterHub database and cookie secrets
       - "data:${DATA_VOLUME_CONTAINER}"
       - "${HOST_PERSONAL_NETWORK_FOLDER}:${HOST_PERSONAL_NETWORK_FOLDER}" ### needed for pre spawn hook
-      #- "${HOST_SHARED_NETWORK_FOLDER}:${HOST_SHARED_NETWORK_FOLDER}" ### not really needed
+      - "${HOST_SHARED_NETWORK_FOLDER}:${HOST_SHARED_NETWORK_FOLDER}" ### not really needed
     ports:
       - "443:443"
     links:
@@ -46,20 +46,18 @@ services:
       # Postgres db info
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: hub-db
-      #Network paths
+      # Network paths
       DOCKER_PERSONAL_NETWORK_FOLDER: ${DOCKER_PERSONAL_NETWORK_FOLDER}
       DOCKER_SHARED_NETWORK_FOLDER: ${DOCKER_SHARED_NETWORK_FOLDER}
       HOST_PERSONAL_NETWORK_FOLDER: ${HOST_PERSONAL_NETWORK_FOLDER}
-      #HOST_SHARED_NETWORK_FOLDER: ${HOST_SHARED_NETWORK_FOLDER}
+      # HOST_SHARED_NETWORK_FOLDER: ${HOST_SHARED_NETWORK_FOLDER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      #GitHubOAuthenticator
-      #GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
-      #GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-      #OAUTH_CALLBACK_URL: ${OAUTH_CALLBACK_URL}
+      JUPYTER_ENABLE_LAB: 1
+      GRANT_SUDO: yes
     env_file: ### env files containing variables you do not want to track in GitHub
       - secrets/postgres.env
-      - secrets/oauth.env
-    command: >
+      - .env
+    command: 
       jupyterhub -f /srv/jupyterhub/jupyterhub_config.py
 
   hub-db:
@@ -75,15 +73,40 @@ services:
     volumes:
       - "db:${DB_VOLUME_CONTAINER}"
 
+  ngrok:
+    image: shkoliar/ngrok:latest
+    container_name: jupyterhub-ngrok
+    depends_on:
+      - hub
+    restart: always
+    ports:
+      - 4551:4551
+    links:
+    - hub
+    environment:
+      - DOMAIN=hub
+      - PORT=443
+      - AUTH_TOKEN=${NGROK_AUTHTOKEN}
+      - DEBUG=True
+      - REGION=ap
+
+  nginx:
+      image: nginx:latest
+      container_name: jupyterhub-nginx
+      volumes:
+        - "./cfgs/nginx.conf:/etc/nginx/nginx.conf:ro"
+      ports:
+        - 8000:8000
+      links:
+        - hub
+
 networks:
   default:
-    external:
-      name: ${DOCKER_NETWORK_NAME}
+    driver: bridge
+    name: ${DOCKER_NETWORK_NAME}
 
 volumes:
   data:
-    external:
-      name: ${DATA_VOLUME_HOST}
+    name: ${DATA_VOLUME_HOST}
   db:
-    external:
-      name: ${DB_VOLUME_HOST}
+    name: ${DB_VOLUME_HOST}
